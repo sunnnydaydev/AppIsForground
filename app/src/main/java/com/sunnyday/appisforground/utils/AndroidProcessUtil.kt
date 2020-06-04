@@ -5,6 +5,7 @@ import android.app.ActivityManager
 import android.content.ComponentName
 import android.content.Context
 import android.text.TextUtils
+import com.sunnyday.appisforground.MyApplication
 
 /**
  * Create by SunnyDay on 2020/06/03
@@ -40,11 +41,19 @@ class AndroidProcessUtil {
             for (runningProcess in runningAppProcessInfo) {
                 if (runningProcess.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
                     && pkgName == runningProcess.processName
-                ){
+                ) {
                     return true
                 }
             }
             return false
+        }
+
+        /**
+         *@function ActivityLifecycleCallback 方式判断app是否处于前台。
+         *@param myApplication 自定义的Application
+         * */
+        fun getApplicationValue(myApplication: MyApplication): Boolean {
+            return myApplication.getAppCount() > 0
         }
     }
 }

@@ -1,14 +1,14 @@
-# 判断App是否位于前台的6种方案
+判断App是否位于前台的6种方案
 
 ### 方案总览
-| 方法   | 原理                         | 是否需要权限 | 是否可以判断其他请用位于前台        | 缺点                 |
-| ---- | -------------------------- | ------ | --------------------- | ------------------ |
-| 1    | Running Task               | 否      | android 5.0以下可以       | android 5.0开始此方法废弃 |
-| 2    | Running Process            | 否      | 当App存在后台常驻的Service时失效 | 无                  |
-| 3    | ActivityLifecycleCallbacks | 否      | 否                     | 简单有效代码少            |
-| 4    | UsageStateManager          | 是      | 是                     | 需要用户手动授权           |
-| 5    | 通过安卓无障碍功能实现                | 否      | 是                     | 需要用户手动授权           |
-| 6    | 读取/proc目录下的信息              | 否      | 是                     | 需要用户手动授权           |
+| 方法   | 原理                         | 是否需要权限 | 是否可以判断其他请用位于前台 | 缺点                          |
+| ---- | -------------------------- | ------ | -------------- | --------------------------- |
+| 1    | Running Task               | 否      | 是              | android 5.0开始此方法废弃          |
+| 2    | Running Process            | 否      | 是              | 当App存在后台常驻的Service时失效       |
+| 3    | ActivityLifecycleCallbacks | 否      | 否              | 简单有效代码少                     |
+| 4    | UsageStateManager          | 是      | 是              | 需要用户手动授权                    |
+| 5    | 通过安卓无障碍功能实现                | 否      | 是              | 需要用户手动授权                    |
+| 6    | 读取/proc目录下的信息              | 否      | 是              | 当proc目录下文件夹过多时,过多的IO操作会引起耗时 |
 
 ### 方案一：Running Task
 
@@ -82,6 +82,87 @@
 
 > App 存在后台常驻的service时此方法失败（例如双进程service常驻后台）
 
-### 方案三：待续。。。
+### 方案三：ActivityLifecycleCallbacks
+
+###### 1、代码
+
+```kotlin
+       /**
+         *@function ActivityLifecycleCallback 方式判断app是否处于前台。
+         *@param myApplication 自定义的Application
+         * */
+        fun getApplicationValue(myApplication: MyApplication): Boolean {
+            return myApplication.getAppCount() > 0
+        }
+
+```
+
+```kotlin
+
+/**
+ * Create by SunnyDay on 2020/06/04
+ */
+class MyApplication : Application() {
+
+    private var appCount = 0
+
+    override fun onCreate() {
+        super.onCreate()
+
+        registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
+            override fun onActivityPaused(activity: Activity) {}
+
+            override fun onActivityStarted(activity: Activity) {
+               appCount++
+            }
+
+            override fun onActivityDestroyed(activity: Activity) {}
+
+            override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
+
+            override fun onActivityStopped(activity: Activity) {
+               appCount--
+            }
+
+            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
+
+            override fun onActivityResumed(activity: Activity) {}
+        })
+    }
+
+    fun getAppCount() = appCount
+
+    fun setAppCount(appCount: Int) {
+        this.appCount = appCount
+    }
+}
+```
+
+###### 2、原理
+
+> ActivityLifecycleCallbacks方式，设置个appCount 作为计数器。每当activity可见（onStart时，实际onResume时才位于前台）就认为activity位于前台，appCount+1，activity不可见(onStop)时appCount-1。
+>
+> - appCount = 0时app位于后台
+> - appCount >0时app位于前台
+
+###### 3、优缺点
+
+> 优点：
+>
+> 1、简单有效,代码最少
+>
+> 2、当Application因为内存不足而被Kill掉时，这个方法仍然能正常使用。虽然全局变量的值会因此丢失，但是再次进入App时候会重新统计一次的
+>
+> 3、Application是否被销毁,都不会影响判断的正确性
+>
+> 缺点：
+>
+> 1、ActivityLifecycleCallbacks方法在API 14以上有效
+>
+> 2、需要用户自定义Application并且注册ActivityLifecycleCallbacks接口
+>
+> 3、不支持多进程下判断
+
+### 四、待续！！！
 
 [参考](https://github.com/wenmingvs/AndroidProcess)

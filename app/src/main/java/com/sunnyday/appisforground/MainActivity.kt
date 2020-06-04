@@ -18,11 +18,13 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         Log.d(TAG, "getRunningTask方式--> APP 是否位于前台：${AndroidProcessUtil.getRunningTask(this, packageName)}")
         Log.d(TAG, "getRunningAppProcess方式--> APP 是否位于前台：${AndroidProcessUtil.getRunningAppProcess(this, packageName)}")
+        Log.d(TAG,"ActivityLifecycleCallbacks方式-->${AndroidProcessUtil.getApplicationValue(application as MyApplication)}")
     }
 
     override fun onStop() {
         super.onStop()
         Log.d(TAG, "getRunningTask方式--> APP 是否位于前台：${AndroidProcessUtil.getRunningTask(this, packageName)}")
         Log.d(TAG, "getRunningAppProcess方式--> APP 是否位于前台：${AndroidProcessUtil.getRunningAppProcess(this, packageName)}")
+        Log.d(TAG,"ActivityLifecycleCallbacks方式-->${AndroidProcessUtil.getApplicationValue(application as MyApplication)}")
     }
 }
