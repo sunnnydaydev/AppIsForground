@@ -2,6 +2,9 @@ package com.sunnyday.appisforground.utils
 
 import android.annotation.SuppressLint
 import android.app.ActivityManager
+import android.app.AppOpsManager
+import android.app.usage.UsageStats
+import android.app.usage.UsageStatsManager
 import android.content.ComponentName
 import android.content.Context
 import android.text.TextUtils
@@ -54,6 +57,61 @@ class AndroidProcessUtil {
          * */
         fun getApplicationValue(myApplication: MyApplication): Boolean {
             return myApplication.getAppCount() > 0
+        }
+
+        /**
+         * @param context
+         * @param pkgName
+         * */
+        fun queryUseageState(context: Context, pkgName: String): Boolean {
+            // 定义个比较器，方便对象排序
+            class RecentUseComparator : Comparator<UsageStats> {
+                override fun compare(o1: UsageStats?, o2: UsageStats?): Int {
+                    return when {
+                        o1!!.lastTimeUsed > o2!!.lastTimeUsed -> -1
+                        o1.lastTimeUsed == o2.lastTimeUsed -> -1
+                        else -> 1
+                    }
+                }
+            }
+
+            val recentUseComparator = RecentUseComparator()
+            val currentTime = System.currentTimeMillis()
+            val usageStateManager =
+                context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+            val usageStatsList = usageStateManager.queryUsageStats(
+                UsageStatsManager.INTERVAL_BEST,
+                currentTime - 1000 * 10,
+                currentTime
+            )
+            if (usageStatsList == null || usageStatsList.size == 0) {
+              if (!isHavePermissionForUsageState(context)){
+                 // todo 待续
+              }
+            }
+            return false
+        }
+
+        /**
+         * @function 是否有package usage state 权限
+         * @param context
+         * */
+        private fun isHavePermissionForUsageState(context: Context): Boolean {
+            return try {
+                val packageManager = context.packageManager
+                val applicationInfo = packageManager.getApplicationInfo(context.packageName, 0)
+                val appOpsManager =
+                    context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+                val mode = appOpsManager.checkOpNoThrow(
+                    AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    applicationInfo.uid,
+                    applicationInfo.packageName
+                )
+                mode == AppOpsManager.MODE_ALLOWED
+            } catch (e: Exception) {
+                true
+            }
+
         }
     }
 }
