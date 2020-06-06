@@ -163,6 +163,95 @@ class MyApplication : Application() {
 >
 > 3、不支持多进程下判断
 
-### 四、待续！！！
+### 方案四、UsageStateManager
+
+###### 1、代码
+
+
+
+```java
+   /**
+         * @function  通过usageStateManager 获取一段时间内应用使用的统计信息，来判断指定包名应用是否前台
+         * @param context
+         * @param pkgName
+         * */
+        fun queryUseageState(context: Context, pkgName: String): Boolean {
+            // 定义个比较器，方便对象排序
+            class RecentUseComparator : Comparator<UsageStats> {
+                override fun compare(o1: UsageStats?, o2: UsageStats?): Int {
+                    return when {
+                        o1!!.lastTimeUsed > o2!!.lastTimeUsed -> -1
+                        o1.lastTimeUsed == o2.lastTimeUsed -> -1
+                        else -> 1
+                    }
+                }
+            }
+
+            val recentUseComparator = RecentUseComparator()
+            val currentTime = System.currentTimeMillis()
+            val usageStateManager =
+                context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+            val usageStatsList = usageStateManager.queryUsageStats(
+                UsageStatsManager.INTERVAL_BEST,
+                currentTime - 1000 * 10,
+                currentTime
+            )  // 10 s 内应用使用情况
+            if (usageStatsList == null || usageStatsList.size == 0) {
+                if (!isHavePermissionForUsageState(context)) {
+                    val intent = Intent(ACTION_USAGE_ACCESS_SETTINGS)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    context.startActivity(intent)
+                    Toast.makeText(
+                        context,
+                        "权限不够\n请打开手机设置，点击安全-高级，在有权查看使用情况的应用中，为这个App打上勾",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                return false
+            }
+            Collections.sort(usageStatsList, recentUseComparator)
+            val currentTopPackage = usageStatsList[0].packageName
+            return currentTopPackage == pkgName
+        }
+
+        /**
+         * @function 是否有package usage state 权限
+         * @param context
+         * */
+        private fun isHavePermissionForUsageState(context: Context): Boolean {
+            return try {
+                val packageManager = context.packageManager
+                val applicationInfo = packageManager.getApplicationInfo(context.packageName, 0)
+                val appOpsManager =
+                    context.getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+                val mode = appOpsManager.checkOpNoThrow(
+                    AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    applicationInfo.uid,
+                    applicationInfo.packageName
+                )
+                mode == AppOpsManager.MODE_ALLOWED
+            } catch (e: Exception) {
+                true
+            }
+
+        }
+//<uses-permission  android:name="android.permission.PACKAGE_USAGE_STATS" />
+```
+
+###### 3、原理
+
+> 通过手机设置里面的usageState功能来获取一段时间内应用使用的统计信息，来判断指定包名应用是否前台
+
+###### 4、优缺点
+
+> 优点：
+>
+>  可判断其他应用是否位于前台
+>
+> 缺点：
+>
+> 1、需要用户授权(打开手机设置，点击安全-高级，在有权查看使用情况的应用中，为这个App打上勾)
+>
+> 2、此方法只在android5.0以上有效
 
 [参考](https://github.com/wenmingvs/AndroidProcess)

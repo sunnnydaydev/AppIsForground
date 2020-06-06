@@ -9,6 +9,15 @@ import android.content.ComponentName
 import android.content.Context
 import android.text.TextUtils
 import com.sunnyday.appisforground.MyApplication
+import android.widget.Toast
+import androidx.core.content.ContextCompat.startActivity
+import android.content.Intent
+import android.provider.Settings
+import android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS
+import java.util.*
+import kotlin.Comparator
+
+
 
 /**
  * Create by SunnyDay on 2020/06/03
@@ -60,6 +69,7 @@ class AndroidProcessUtil {
         }
 
         /**
+         * @function  通过usageStateManager 获取一段时间内应用使用的统计信息，来判断指定包名应用是否前台
          * @param context
          * @param pkgName
          * */
@@ -83,13 +93,23 @@ class AndroidProcessUtil {
                 UsageStatsManager.INTERVAL_BEST,
                 currentTime - 1000 * 10,
                 currentTime
-            )
+            )  // 10 s 内应用使用情况
             if (usageStatsList == null || usageStatsList.size == 0) {
-              if (!isHavePermissionForUsageState(context)){
-                 // todo 待续
-              }
+                if (!isHavePermissionForUsageState(context)) {
+                    val intent = Intent(ACTION_USAGE_ACCESS_SETTINGS)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    context.startActivity(intent)
+                    Toast.makeText(
+                        context,
+                        "权限不够\n请打开手机设置，点击安全-高级，在有权查看使用情况的应用中，为这个App打上勾",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                return false
             }
-            return false
+            Collections.sort(usageStatsList, recentUseComparator)
+            val currentTopPackage = usageStatsList[0].packageName
+            return currentTopPackage == pkgName
         }
 
         /**
