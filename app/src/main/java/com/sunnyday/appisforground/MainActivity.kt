@@ -19,7 +19,8 @@ class MainActivity : AppCompatActivity() {
         Log.d(TAG, "getRunningTask方式--> APP 是否位于前台：${AndroidProcessUtil.getRunningTask(this, packageName)}")
         Log.d(TAG, "getRunningAppProcess方式--> APP 是否位于前台：${AndroidProcessUtil.getRunningAppProcess(this, packageName)}")
         Log.d(TAG,"ActivityLifecycleCallbacks方式-->${AndroidProcessUtil.getApplicationValue(application as MyApplication)}")
-        Log.d(TAG,"UsageStateManager方式-->${AndroidProcessUtil.queryUseageState(this,packageName)}")
+        Log.d(TAG,"UsageStateManager方式-->${AndroidProcessUtil.queryUsageState(this,packageName)}")
+        Log.d(TAG,"AccessibilityService方式-->${AndroidProcessUtil.getFromAccessibilityService(this,packageName)}")
     }
 
     override fun onStop() {
@@ -27,6 +28,7 @@ class MainActivity : AppCompatActivity() {
         Log.d(TAG, "getRunningTask方式--> APP 是否位于前台：${AndroidProcessUtil.getRunningTask(this, packageName)}")
         Log.d(TAG, "getRunningAppProcess方式--> APP 是否位于前台：${AndroidProcessUtil.getRunningAppProcess(this, packageName)}")
         Log.d(TAG,"ActivityLifecycleCallbacks方式-->${AndroidProcessUtil.getApplicationValue(application as MyApplication)}")
-        Log.d(TAG,"UsageStateManager方式-->${AndroidProcessUtil.queryUseageState(this,packageName)}")
+        Log.d(TAG,"UsageStateManager方式-->${AndroidProcessUtil.queryUsageState(this,packageName)}")
+        Log.d(TAG,"AccessibilityService方式-->${AndroidProcessUtil.getFromAccessibilityService(this,packageName)}")
     }
 }

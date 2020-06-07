@@ -14,8 +14,10 @@ import androidx.core.content.ContextCompat.startActivity
 import android.content.Intent
 import android.provider.Settings
 import android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS
+import android.util.Log
 import java.util.*
 import kotlin.Comparator
+import com.sunnyday.appisforground.services.DetectService
 
 
 
@@ -73,7 +75,7 @@ class AndroidProcessUtil {
          * @param context
          * @param pkgName
          * */
-        fun queryUseageState(context: Context, pkgName: String): Boolean {
+        fun queryUsageState(context: Context, pkgName: String): Boolean {
             // 定义个比较器，方便对象排序
             class RecentUseComparator : Comparator<UsageStats> {
                 override fun compare(o1: UsageStats?, o2: UsageStats?): Int {
@@ -132,6 +134,24 @@ class AndroidProcessUtil {
                 true
             }
 
+        }
+
+        /**
+         * @function 通过AccessibilityService 判断任意应用是否在前台
+         * @param context
+         * @param pkgName
+         * */
+        fun getFromAccessibilityService(context: Context, pkgName: String): Boolean {
+            return if (DetectService.isAccessibilitySettingsOn(context)) {
+                val foreground = DetectService.getForegroundPackage()
+                Log.d("AndroidProcessUtil", "当前窗口焦点对应的包名为： =$foreground")
+                pkgName == foreground
+            } else {
+                val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                context.startActivity(intent)
+                false
+            }
         }
     }
 }

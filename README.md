@@ -254,4 +254,108 @@ class MyApplication : Application() {
 >
 > 2、此方法只在android5.0以上有效
 
+### 方案五、AccessibilityService
+
+###### 1、代码
+
+```java
+  /**
+         * @function 通过AccessibilityService 判断任意应用是否在前台
+         * @param context
+         * @param pkgName
+         * */
+        fun getFromAccessibilityService(context: Context, pkgName: String): Boolean {
+            return if (DetectService.isAccessibilitySettingsOn(context)) {
+                val foreground = DetectService.getForegroundPackage()
+                Log.d("AndroidProcessUtil", "当前窗口焦点对应的包名为： =$foreground")
+                pkgName == foreground
+            } else {
+                val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                context.startActivity(intent)
+                false
+            }
+        }
+```
+
+```java
+
+/**
+ * Create by SunnyDay on 2020/06/07
+ */
+class DetectService : AccessibilityService() {
+    override fun onInterrupt() {}
+    /**
+     * 监听窗口焦点,并且获取焦点窗口的包名
+     * @param event
+     */
+    override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+        if (event?.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            mForegroundPackageName = event.packageName.toString()
+        }
+    }
+
+    companion object {
+        private var mForegroundPackageName = ""
+
+        fun getForegroundPackage(): String {
+            return mForegroundPackageName
+        }
+        /**
+         * 判断当前应用的辅助功能服务是否开启
+         *
+         * @param context
+         * @return
+         */
+        @SuppressLint("DefaultLocale")
+        fun isAccessibilitySettingsOn(context: Context): Boolean {
+            var accessibilityEnabled = 0
+            try {
+                accessibilityEnabled = Secure.getInt(
+                    context.contentResolver,
+                    Secure.ACCESSIBILITY_ENABLED
+                )
+            } catch (e: SettingNotFoundException) {
+               e.printStackTrace()
+            }
+
+            if (accessibilityEnabled == 1) {
+                val services = Secure.getString(
+                    context.contentResolver,
+                    ENABLED_ACCESSIBILITY_SERVICES
+                )
+                if (services != null) {
+                    return services.toLowerCase().contains(context.packageName.toLowerCase())
+                }
+            }
+            return false
+        }
+    }
+}
+```
+
+###### 2、原理
+
+> Android 辅助功能（ AccessibilityService ）为我们提供了一系例的事件回调，帮助我们指示一些用户界面的状态变化。我们可以派生辅助功能类，进而对不同的 AccessibilityEvent 进行处理，同样的，这个服务就可以判断当前的前台应用。可以用来判断任意应用甚至 Activity、PopopWindow、Dialog 对象是否处于前台。
+
+###### 3、优缺点
+
+>优势:
+>
+>- AccessibilityService 有非常广泛的 ROM 覆盖，特别是非国产手机，从 Android API Level 8(Android 2.2) 到 Android Api Level 23(Android 6.0)
+>- AccessibilityService 不再需要轮询的判断当前的应用是不是在前台，系统会在窗口状态发生变化的时候主动回调，耗时和资源消耗都极小
+>- 不需要权限请求
+>- 它是一个稳定的方法
+>- 可以用来判断任意应用甚至 Activity, PopupWindow, Dialog 对象是否处于前台
+>
+>缺点：
+>
+>- 需要要用户开启辅助功能
+
+
+
+### 方法六、读取Linux系统内核保存在/proc目录下的process进程信息
+
+> 方法已经失效
+
 [参考](https://github.com/wenmingvs/AndroidProcess)
